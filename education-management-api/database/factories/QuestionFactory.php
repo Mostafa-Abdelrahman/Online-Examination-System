@@ -11,10 +11,12 @@ class QuestionFactory extends Factory
     {
         $category = QuestionCategory::inRandomOrder()->first();
         $doctor = User::where('role', 'doctor')->inRandomOrder()->first();
+        $content = $this->faker->sentence();
         return [
-            'content' => $this->faker->sentence(),
-            'type' => $category ? $category->name : $this->faker->randomElement(['Multiple Choice', 'True/False', 'Short Answer', 'Programming', 'Problem Solving']),
-            'difficulty' => $this->faker->numberBetween(1, 5),
+            'text' => $content,
+            'content' => $content,
+            'type' => $this->faker->randomElement(['multiple_choice', 'true_false', 'short_answer', 'programming', 'essay']),
+            'difficulty' => $this->faker->randomElement(['easy', 'medium', 'hard']),
             'points' => $this->faker->numberBetween(1, 10),
             'category_id' => $category ? $category->id : null,
             'created_by' => $doctor ? $doctor->id : null,

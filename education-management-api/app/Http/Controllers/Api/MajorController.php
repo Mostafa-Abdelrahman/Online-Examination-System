@@ -4,122 +4,82 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Major;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
 
 class MajorController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index(): JsonResponse
     {
-        $majors = Major::with(['courses', 'students'])->get();
-        return response()->json(['majors' => $majors]);
+        return response()->json(Major::withCount(['students', 'courses'])->get());
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:majors',
             'code' => 'required|string|max:50|unique:majors',
             'description' => 'nullable|string',
-            'is_active' => 'boolean',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         $major = Major::create($validated);
 
-        return response()->json([
-            'message' => 'Major created successfully',
-            'major' => $major
-        ], 201);
+        return response()->json($major, 201);
     }
 
+    /**
+     * Display the specified resource.
+     */
     public function show(Major $major): JsonResponse
     {
-        $major->load(['courses', 'students']);
-        return response()->json(['major' => $major]);
+        return response()->json($major->loadCount(['students', 'courses']));
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, Major $major): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'string|max:255',
-            'code' => 'string|max:50|unique:majors,code,' . $major->id,
+            'name' => 'sometimes|required|string|max:255|unique:majors,name,' . $major->id,
+            'code' => 'sometimes|required|string|max:50|unique:majors,code,' . $major->id,
             'description' => 'nullable|string',
-            'is_active' => 'boolean',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         $major->update($validated);
 
-        return response()->json([
-            'message' => 'Major updated successfully',
-            'major' => $major
-        ]);
+        return response()->json($major);
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(Major $major): JsonResponse
     {
         $major->delete();
-        return response()->json(['message' => 'Major deleted successfully']);
+        return response()->json(null, 204);
     }
-
-    public function majorsAnalytics(): JsonResponse
+    
+    /**
+     * Get statistics for majors.
+     */
+    public function stats(): JsonResponse
     {
-        $analytics = Major::withCount(['students', 'courses'])
-            ->with(['courses' => function ($query) {
-                $query->withCount('students');
-            }])
-            ->get()
-            ->map(function ($major) {
-                return [
-                    'id' => $major->id,
-                    'name' => $major->name,
-                    'student_count' => $major->students_count,
-                    'course_count' => $major->courses_count,
-                    'average_students_per_course' => $major->courses_count > 0 
-                        ? round($major->courses->sum('students_count') / $major->courses_count, 2)
-                        : 0,
-                ];
-            });
-
-        return response()->json(['analytics' => $analytics]);
-    }
-
-    public function majorStudents(Major $major): JsonResponse
-    {
-        $students = $major->students()
-            ->with(['courses', 'grades'])
-            ->get();
-
-        return response()->json(['students' => $students]);
-    }
-
-    public function majorCourses(Major $major): JsonResponse
-    {
-        $courses = $major->courses()
-            ->with(['students', 'exams'])
-            ->get();
-
-        return response()->json(['courses' => $courses]);
-    }
-
-    public function majorPerformance(Major $major): JsonResponse
-    {
-        $performance = [
-            'total_students' => $major->students()->count(),
-            'total_courses' => $major->courses()->count(),
-            'average_grades' => $major->courses()
-                ->with('grades')
-                ->get()
-                ->flatMap->grades
-                ->avg('score'),
-            'completion_rate' => $major->courses()
-                ->withCount(['students', 'grades'])
-                ->get()
-                ->avg(function ($course) {
-                    return $course->grades_count / $course->students_count * 100;
-                }),
+        $stats = [
+            'total_majors' => Major::count(),
+            'active_majors' => Major::where('is_active', true)->count(),
+            'total_students' => \App\Models\User::where('role', 'student')->count(),
+            'total_courses' => \App\Models\Course::count(),
         ];
 
-        return response()->json(['performance' => $performance]);
+        return response()->json(['data' => $stats]);
     }
 }

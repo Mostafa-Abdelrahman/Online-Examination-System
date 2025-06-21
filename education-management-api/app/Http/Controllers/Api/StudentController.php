@@ -242,6 +242,8 @@ class StudentController extends Controller
                 'exam_name' => $grade->exam->name,
                 'course_name' => $grade->exam->course->name ?? 'Unknown Course',
                 'score' => $grade->score,
+                'percentage' => $grade->percentage,
+                'grade_letter' => $grade->grade_letter,
                 'status' => $grade->status,
                 'submitted_at' => $grade->created_at,
             ];
@@ -283,6 +285,40 @@ class StudentController extends Controller
                       ->get();
 
         return response()->json(['data' => $grades]);
+    }
+
+    public function myGrades(Request $request)
+    {
+        $user = $request->user();
+        $grades = Grade::where('student_id', $user->id)
+                      ->with(['exam.course'])
+                      ->get();
+
+        $formattedGrades = $grades->map(function ($grade) {
+            return [
+                'id' => $grade->id,
+                'grade_id' => $grade->id,
+                'student_id' => $grade->student_id,
+                'exam_id' => $grade->exam_id,
+                'score' => (float) $grade->score,
+                'percentage' => (float) $grade->score,
+                'feedback' => $grade->feedback,
+                'graded_by' => $grade->graded_by,
+                'created_at' => $grade->created_at,
+                'updated_at' => $grade->updated_at,
+                'exam' => [
+                    'id' => $grade->exam->id,
+                    'name' => $grade->exam->name,
+                    'course' => [
+                        'id' => $grade->exam->course->id,
+                        'name' => $grade->exam->course->name,
+                        'code' => $grade->exam->course->code,
+                    ]
+                ]
+            ];
+        });
+
+        return response()->json(['data' => $formattedGrades]);
     }
 
     public function profile(Request $request, User $student)

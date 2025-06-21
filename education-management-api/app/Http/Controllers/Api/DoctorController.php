@@ -165,19 +165,19 @@ class DoctorController extends Controller
     {
         $request->validate([
             'text' => 'required|string',
-            'type' => 'required|in:mcq,written',
+            'type' => 'required|in:multiple_choice,true_false,short_answer,programming,essay',
             'chapter' => 'nullable|string',
             'difficulty' => 'nullable|in:easy,medium,hard',
-            'created_by' => 'required|exists:users,id',
             'evaluation_criteria' => 'nullable|string',
         ]);
 
         $question = Question::create([
             'text' => $request->text,
+            'content' => $request->text,
             'type' => $request->type,
             'chapter' => $request->chapter,
             'difficulty' => $request->difficulty ?? 'medium',
-            'created_by' => $request->created_by,
+            'created_by' => $request->user()->id,
             'evaluation_criteria' => $request->evaluation_criteria,
         ]);
 
@@ -264,12 +264,35 @@ class DoctorController extends Controller
                 'users.name as student_name',
                 'questions.text as question_text',
                 'questions.type as question_type',
-                'student_answers.written_answer'
+                'student_answers.written_answer',
+                'student_answers.choice_id'
             ])
-            ->where('questions.type', 'written')
+            ->whereIn('questions.type', ['essay', 'multiple_choice', 'short_answer', 'programming'])
             ->get();
 
-        return response()->json(['data' => $submissions]);
+        // Format the data to match frontend expectations
+        $formattedSubmissions = $submissions->map(function ($submission) {
+            $answer = '';
+            if ($submission->written_answer) {
+                $answer = $submission->written_answer;
+            } elseif ($submission->choice_id) {
+                $choice = \App\Models\Choice::find($submission->choice_id);
+                $answer = $choice ? $choice->text : 'Selected choice';
+            } else {
+                $answer = 'No answer provided';
+            }
+
+            return [
+                'student_exam_answer_id' => $submission->student_exam_answer_id,
+                'student_id' => $submission->student_id,
+                'student_name' => $submission->student_name,
+                'question_text' => $submission->question_text,
+                'question_type' => $submission->question_type,
+                'written_answer' => $answer,
+            ];
+        });
+
+        return response()->json(['data' => $formattedSubmissions]);
     }
 
     public function gradeExam(Request $request, Exam $exam, User $student)

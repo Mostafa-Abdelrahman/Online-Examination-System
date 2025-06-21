@@ -20,6 +20,7 @@ class QuestionSeeder extends Seeder
                 'explanation' => 'Binary search has a time complexity of O(log n) because it divides the search space in half with each comparison.',
             ],
             [
+                'text' => 'this is test text',
                 'content' => 'Is JavaScript a statically typed language?',
                 'type' => 'true_false',
                 'difficulty' => 'easy',
@@ -41,8 +42,12 @@ class QuestionSeeder extends Seeder
             ],
         ];
 
-        foreach ($questions as $question) {
-            Question::create($question);
+        foreach ($questions as $questionData) {
+            // Ensure 'text' is set, defaulting to 'content' if not present
+            if (!isset($questionData['text'])) {
+                $questionData['text'] = $questionData['content'];
+            }
+            Question::create($questionData);
         }
 
         // Create additional random questions

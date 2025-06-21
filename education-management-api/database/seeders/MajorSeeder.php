@@ -16,19 +16,25 @@ class MajorSeeder extends Seeder
             [
                 'name' => 'Information Technology',
                 'code' => 'IT',
-                'description' => 'Focus on information systems, software development, and network administration.',
+                'description' => 'Focuses on the application of computer systems to meet business and communication needs.',
                 'is_active' => true,
             ],
             [
                 'name' => 'Software Engineering',
                 'code' => 'SE',
-                'description' => 'Engineering principles applied to software development and maintenance.',
+                'description' => 'The systematic application of engineering principles to the development of software.',
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Cybersecurity',
+                'code' => 'CSEC',
+                'description' => 'Practice of protecting systems, networks, and programs from digital attacks.',
                 'is_active' => true,
             ],
             [
                 'name' => 'Data Science',
                 'code' => 'DS',
-                'description' => 'Study of data analysis, machine learning, and statistical methods.',
+                'description' => 'An interdisciplinary field that uses scientific methods, processes, algorithms and systems to extract knowledge and insights from structured and unstructured data.',
                 'is_active' => true,
             ],
             [
@@ -39,8 +45,8 @@ class MajorSeeder extends Seeder
             ],
         ];
 
-        foreach ($majors as $major) {
-            Major::create($major);
+        foreach ($majors as $majorData) {
+            Major::updateOrCreate(['code' => $majorData['code']], $majorData);
         }
 
         // Create additional random majors

@@ -22,11 +22,11 @@ use App\Http\Controllers\Api\StudentController;
 */
 
 // Public routes
-Route::prefix('auth')->group(function () {
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('login', [AuthController::class, 'login']);
-    Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('reset-password', [AuthController::class, 'resetPassword']);
+Route::prefix('auth')->controller(AuthController::class)->group(function () {
+    Route::post('register', 'register');
+    Route::post('login', 'login')->name('login');
+    Route::post('forgot-password', 'forgotPassword');
+    Route::post('reset-password', 'resetPassword');
 });
 
 // Public data routes
@@ -37,11 +37,12 @@ Route::get('health', [AdminController::class, 'systemHealth']);
 Route::middleware(['auth:sanctum'])->group(function () {
     
     // Auth routes
-    Route::prefix('auth')->group(function () {
-        Route::post('logout', [AuthController::class, 'logout']);
+    Route::prefix('auth')->controller(AuthController::class)->group(function () {
+        Route::post('logout', 'logout');
         Route::post('refresh', [AuthController::class, 'refresh']);
-        Route::get('user', [AuthController::class, 'user']);
-        Route::put('profile', [AuthController::class, 'updateProfile']);
+        Route::get('user', 'user');
+        Route::get('profile', 'user');
+        Route::put('profile', 'updateProfile');
         Route::put('password', [AuthController::class, 'changePassword']);
         Route::post('avatar', [AuthController::class, 'uploadAvatar']);
     });
@@ -100,6 +101,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('schedule', [StudentController::class, 'schedule']);
         Route::get('schedule/upcoming', [StudentController::class, 'upcomingEvents']);
         
+        Route::get('grades', [StudentController::class, 'myGrades']);
         Route::get('{student}/grades', [StudentController::class, 'grades']);
         Route::get('{student}/profile', [StudentController::class, 'profile']);
         Route::put('{student}/profile', [StudentController::class, 'updateProfile']);
@@ -192,10 +194,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Admin routes
     Route::middleware(['role:admin'])->prefix('admin')->group(function () {
-        Route::get('stats', [AdminController::class, 'systemStats']);
-        Route::apiResource('courses', App\Http\Controllers\Api\Admin\CourseController::class);
         Route::apiResource('users', UserController::class);
         Route::apiResource('majors', MajorController::class);
+        Route::apiResource('courses', CourseController::class);
+        Route::apiResource('exams', ExamController::class);
+        Route::apiResource('questions', QuestionController::class);
+
+        // Stats
+        Route::get('system-stats', [AdminController::class, 'systemStats']);
+        Route::get('majors/stats', [MajorController::class, 'stats']);
         
         Route::get('questions/stats', [QuestionController::class, 'stats']);
         Route::get('questions/{question}/analytics', [QuestionController::class, 'analytics']);

@@ -18,8 +18,7 @@ class CourseSeeder extends Seeder
                 'description' => 'Basic programming concepts and problem-solving techniques.',
                 'credits' => 3,
                 'semester' => 1,
-                'major_id' => Major::where('code', 'CS')->first()->id,
-                'created_by' => $doctor->id,
+                'major_code' => 'CS',
                 'is_active' => true,
                 'academic_year' => '2024-2025',
             ],
@@ -29,8 +28,7 @@ class CourseSeeder extends Seeder
                 'description' => 'Study of fundamental data structures and algorithm design.',
                 'credits' => 4,
                 'semester' => 2,
-                'major_id' => Major::where('code', 'CS')->first()->id,
-                'created_by' => $doctor->id,
+                'major_code' => 'CS',
                 'is_active' => true,
                 'academic_year' => '2024-2025',
             ],
@@ -40,8 +38,7 @@ class CourseSeeder extends Seeder
                 'description' => 'Design and implementation of database systems.',
                 'credits' => 3,
                 'semester' => 3,
-                'major_id' => Major::where('code', 'IT')->first()->id,
-                'created_by' => $doctor->id,
+                'major_code' => 'IT',
                 'is_active' => true,
                 'academic_year' => '2024-2025',
             ],
@@ -51,8 +48,7 @@ class CourseSeeder extends Seeder
                 'description' => 'Principles and practices of software development.',
                 'credits' => 4,
                 'semester' => 4,
-                'major_id' => Major::where('code', 'SE')->first()->id,
-                'created_by' => $doctor->id,
+                'major_code' => 'SE',
                 'is_active' => true,
                 'academic_year' => '2024-2025',
             ],
@@ -62,14 +58,20 @@ class CourseSeeder extends Seeder
                 'description' => 'Introduction to machine learning algorithms and applications.',
                 'credits' => 4,
                 'semester' => 5,
-                'major_id' => Major::where('code', 'AI')->first()->id,
-                'created_by' => $doctor->id,
+                'major_code' => 'AI',
                 'is_active' => true,
                 'academic_year' => '2024-2025',
             ],
         ];
 
         foreach ($courses as $course) {
+            $major = Major::where('code', $course['major_code'])->first();
+            if (!$major) {
+                throw new \Exception("Major with code '{$course['major_code']}' not found. Please check your MajorSeeder.");
+            }
+            $course['major_id'] = $major->id;
+            unset($course['major_code']);
+            $course['created_by'] = $doctor->id;
             Course::create($course);
         }
 

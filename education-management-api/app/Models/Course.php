@@ -23,6 +23,8 @@ class Course extends Model
         'status',
         'semester',
         'academic_year',
+        'created_by',
+        'is_active',
     ];
 
     protected $casts = [
@@ -42,7 +44,7 @@ class Course extends Model
 
     public function students(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'student_courses', 'course_id', 'student_id')
+        return $this->belongsToMany(User::class, 'student_courses', 'course_id', 'user_id')
             ->withPivot('id', 'enrollment_date', 'status')
             ->withTimestamps();
     }

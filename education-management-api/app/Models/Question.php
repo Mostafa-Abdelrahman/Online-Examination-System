@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Crypt;
 
 class Question extends Model
 {
@@ -15,6 +16,7 @@ class Question extends Model
 
     protected $fillable = [
         'text',
+        'content',
         'type',
         'course_id',
         'created_by',
@@ -36,6 +38,102 @@ class Question extends Model
         'is_active' => 'boolean',
         'time_limit' => 'integer',
     ];
+
+    // Encryption/Decryption for text field
+    public function getTextAttribute($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Exception $e) {
+            // If decryption fails, return as-is (might be plain text)
+            return $value;
+        }
+    }
+
+    public function setTextAttribute($value)
+    {
+        if (!empty($value)) {
+            $this->attributes['text'] = Crypt::encryptString($value);
+        } else {
+            $this->attributes['text'] = $value;
+        }
+    }
+
+    // Encryption/Decryption for content field
+    public function getContentAttribute($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Exception $e) {
+            // If decryption fails, return as-is (might be plain text)
+            return $value;
+        }
+    }
+
+    public function setContentAttribute($value)
+    {
+        if (!empty($value)) {
+            $this->attributes['content'] = Crypt::encryptString($value);
+        } else {
+            $this->attributes['content'] = $value;
+        }
+    }
+
+    // Encryption/Decryption for explanation field
+    public function getExplanationAttribute($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Exception $e) {
+            // If decryption fails, return as-is (might be plain text)
+            return $value;
+        }
+    }
+
+    public function setExplanationAttribute($value)
+    {
+        if (!empty($value)) {
+            $this->attributes['explanation'] = Crypt::encryptString($value);
+        } else {
+            $this->attributes['explanation'] = $value;
+        }
+    }
+
+    // Encryption/Decryption for evaluation_criteria field
+    public function getEvaluationCriteriaAttribute($value)
+    {
+        if (empty($value)) {
+            return $value;
+        }
+        
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Exception $e) {
+            // If decryption fails, return as-is (might be plain text)
+            return $value;
+        }
+    }
+
+    public function setEvaluationCriteriaAttribute($value)
+    {
+        if (!empty($value)) {
+            $this->attributes['evaluation_criteria'] = Crypt::encryptString($value);
+        } else {
+            $this->attributes['evaluation_criteria'] = $value;
+        }
+    }
 
     public function course()
     {

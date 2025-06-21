@@ -13,9 +13,11 @@ return new class extends Migration
     {
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
+            $table->text('text');
             $table->text('content');
-            $table->string('type');
-            $table->string('difficulty');
+            $table->string('chapter')->nullable();
+            $table->enum('type', ['multiple_choice', 'true_false', 'short_answer', 'programming', 'essay']);
+            $table->string('difficulty')->default('medium');
             $table->integer('points')->default(1);
             $table->foreignId('category_id')->nullable()->constrained('question_categories')->onDelete('set null');
             $table->foreignId('created_by')->constrained('users');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -16,12 +17,28 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'name' => 'required|string|min:2|max:50|regex:/^[a-zA-Z\s]+$/',
+            'email' => 'required|string|email|max:100|unique:users',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'max:128',
+                'regex:/[a-z]/', // at least one lowercase letter
+                'regex:/[A-Z]/', // at least one uppercase letter
+                'regex:/[0-9]/', // at least one number
+                'regex:/[^A-Za-z0-9]/', // at least one special character
+                'confirmed'
+            ],
             'role' => 'required|in:student,doctor,admin',
             'gender' => 'required|in:male,female,other',
             'major_id' => 'nullable|exists:majors,id',
+        ], [
+            'name.regex' => 'Name can only contain letters and spaces.',
+            'password.regex' => 'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.',
+            'email.max' => 'Email must be less than 100 characters.',
+            'name.min' => 'Name must be at least 2 characters.',
+            'name.max' => 'Name must be less than 50 characters.',
         ]);
 
         $user = User::create([
@@ -43,35 +60,26 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
-        $request->validate([
+        logger()->info('Login request data:', $request->all());
+
+        $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'token' => $token,
+                'user' => $user,
             ]);
         }
 
-        $user = User::where('email', $request->email)->first();
-        
-        if ($user->status !== 'active') {
-            throw ValidationException::withMessages([
-                'email' => ['Your account is suspended.'],
-            ]);
-        }
-
-        $user->update(['last_login' => now()]);
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'token' => $token,
-            'user' => $user->load('major'),
-            'expires_in' => 3600,
-        ]);
+        return response()->json(['message' => 'Invalid credentials'], 401);
     }
 
     public function logout(Request $request)
@@ -126,7 +134,19 @@ class AuthController extends Controller
     {
         $request->validate([
             'current_password' => 'required',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'max:128',
+                'regex:/[a-z]/', // at least one lowercase letter
+                'regex:/[A-Z]/', // at least one uppercase letter
+                'regex:/[0-9]/', // at least one number
+                'regex:/[^A-Za-z0-9]/', // at least one special character
+                'confirmed'
+            ],
+        ], [
+            'password.regex' => 'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.',
         ]);
 
         $user = $request->user();

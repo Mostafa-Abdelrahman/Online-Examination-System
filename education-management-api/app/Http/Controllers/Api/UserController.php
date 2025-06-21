@@ -12,79 +12,74 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(): JsonResponse
     {
-        $query = User::query();
-
-        if ($request->has('role')) {
-            $query->where('role', $request->role);
-        }
-
-        $users = $query->with(['courses', 'grades'])
-            ->when($request->has('search'), function ($q) use ($request) {
-                $search = $request->search;
-                $q->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                });
-            })
-            ->paginate($request->get('per_page', 15));
-
-        return response()->json(['users' => $users]);
+        return response()->json(User::all());
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
+            'password' => 'required|string|min:8|confirmed',
             'role' => ['required', Rule::in(['admin', 'doctor', 'student'])],
-            'major_id' => 'required_if:role,student|exists:majors,id',
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
+        ]);
 
-        $user = User::create($validated);
-
-        return response()->json([
-            'message' => 'User created successfully',
-            'user' => $user
-        ], 201);
+        return response()->json($user, 201);
     }
 
+    /**
+     * Display the specified resource.
+     */
     public function show(User $user): JsonResponse
     {
-        $user->load(['courses', 'grades', 'major']);
-        return response()->json(['user' => $user]);
+        return response()->json($user);
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, User $user): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'string|max:255',
-            'email' => ['string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'role' => [Rule::in(['admin', 'doctor', 'student'])],
-            'major_id' => 'required_if:role,student|exists:majors,id',
-            'is_active' => 'boolean',
+            'name' => 'sometimes|required|string|max:255',
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'password' => 'sometimes|nullable|string|min:8|confirmed',
+            'role' => ['sometimes', 'required', Rule::in(['admin', 'doctor', 'student'])],
         ]);
 
-        if ($request->has('password')) {
-            $validated['password'] = Hash::make($request->password);
+        if (!empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
         }
 
         $user->update($validated);
 
-        return response()->json([
-            'message' => 'User updated successfully',
-            'user' => $user
-        ]);
+        return response()->json($user);
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(User $user): JsonResponse
     {
         $user->delete();
-        return response()->json(['message' => 'User deleted successfully']);
+        return response()->json(null, 204);
     }
 
     public function suspend(User $user): JsonResponse
